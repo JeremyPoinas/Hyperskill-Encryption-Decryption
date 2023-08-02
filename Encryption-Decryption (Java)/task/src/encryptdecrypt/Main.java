@@ -13,14 +13,16 @@ public class Main {
         String data = "";
         String in = "";
         String out = "";
+        String algoChoice = "";
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-mode" -> operation = args[i + 1];
-                case "-key" -> key = Integer.parseInt(args[i + 1]);
+                case "-key" -> key = Integer.parseInt(args[i + 1]) % 26;
                 case "-data" -> data = args[i + 1];
                 case "-in" -> in = args[i + 1];
                 case "-out" -> out = args[i + 1];
+                case "-alg" -> algoChoice = args[i + 1];
             }
         }
 
@@ -33,10 +35,13 @@ public class Main {
         }
 
         String output = "";
+        AlgoFactory algoFactory = new AlgoFactory();
+        Algo algo = algoFactory.create(algoChoice);
+
         if (operation.equals("enc")) {
-            output = encode(data, key);
+            output = algo.encode(data, key);
         } else if (operation.equals("dec")) {
-            output = decode(data, key);
+            output = algo.decode(data, key);
         }
 
         if (!out.equals("")) {
@@ -50,8 +55,73 @@ public class Main {
         }
         System.out.println(output);
     }
+}
 
-    private static String encode(String data, int key) {
+class AlgoFactory {
+    Algo create(String type) {
+        if (type.equals("unicode")) {
+            return new UnicodeAlgo();
+        }
+        return new ShiftAlgo();
+    }
+}
+
+abstract class Algo {
+    abstract String encode(String data, int key);
+
+    abstract String decode(String data, int key);
+}
+
+class ShiftAlgo extends Algo {
+    String encode(String data, int key) {
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < data.length(); i++) {
+            int curr = data.charAt(i);
+            char newChar = (char) curr;
+            if (Character.isLetter(curr)) {
+                boolean isUpperCase = Character.isUpperCase(curr);
+                curr = Character.toLowerCase(curr) - 97;
+                newChar = (char) ((curr + key) % 26);
+
+                if (isUpperCase) {
+                    newChar += 65;
+                } else {
+                    newChar += 97;
+                }
+            }
+            output.append(newChar);
+        }
+        return new String(output);
+    }
+
+    String decode(String data, int key) {
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < data.length(); i++) {
+            int curr = data.charAt(i);
+            char newChar = (char) curr;
+            if (Character.isLetter(curr)) {
+                boolean isUpperCase = Character.isUpperCase(curr);
+                curr = Character.toLowerCase(curr) - 97;
+                if (curr - key < 0) {
+                    newChar = (char) (26 + (curr - key));
+                } else {
+                    newChar = (char) (curr - key);
+                }
+
+                if (isUpperCase) {
+                    newChar += 65;
+                } else {
+                    newChar += 97;
+                }
+            }
+            output.append(newChar);
+        }
+        return new String(output);
+    }
+}
+
+class UnicodeAlgo extends Algo {
+    String encode(String data, int key) {
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < data.length(); i++) {
             int curr = data.charAt(i);
@@ -61,7 +131,7 @@ public class Main {
         return new String(output);
     }
 
-    private static String decode(String data, int key) {
+    String decode(String data, int key) {
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < data.length(); i++) {
             int curr = data.charAt(i);
@@ -71,3 +141,4 @@ public class Main {
         return new String(output);
     }
 }
+
